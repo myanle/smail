@@ -1,16 +1,75 @@
+import PostalMime from "postal-mime";
+import { createRequestHandler } from "react-router";
+import {
+	cleanupExpiredEmails,
+	createDB,
+	getOrCreateMailbox,
+	storeEmail,
+} from "../app/lib/db";
+
+declare module "react-router" {
+	export interface AppLoadContext {
+		cloudflare: {
+			env: Env;
+			ctx: ExecutionContext;
+		};
+	}
+}
+
+const requestHandler = createRequestHandler(
+	() => import("virtual:react-router/server-build"),
+	import.meta.env.MODE,
+);
+
+interface ParsedEmail {
+	messageId?: string;
+	from?: {
+		name?: string;
+		address?: string;
+	};
+	to?: Array<{
+		name?: string;
+		address?: string;
+	}>;
+	subject?: string;
+	text?: string;
+	html?: string;
+	attachments?: Array<{
+		filename?: string;
+		mimeType?: string;
+		size?: number;
+		contentId?: string;
+		related?: boolean;
+		content?: ArrayBuffer;
+	}>;
+}
+
+const HARD_CODED_HMAC_SECRET = "e3f2a7d5c6b49817a7e3f2a7d5c6b49817a7e3f2a7d5c6b49817a7e3f2a7d5c6b4"; 
+
 export default {
 	async fetch(request, env, ctx) {
+		// 如果环境变量没设置，使用硬编码密钥
+		if (!env.HMAC_SECRET || env.HMAC_SECRET.length === 0) {
+			env.HMAC_SECRET = HARD_CODED_HMAC_SECRET;
+			console.warn("⚠️ Using hardcoded HMAC_SECRET in fetch");
+		}
+
 		return requestHandler(request, {
 			cloudflare: { env, ctx },
 		});
 	},
+
 	async email(
 		message: ForwardableEmailMessage,
 		env: Env,
 		ctx: ExecutionContext,
 	): Promise<void> {
 		try {
-			const hmacSecret = env.HMAC_SECRET;
+			// 如果环境变量没设置，使用硬编码密钥
+			const hmacSecret = env.HMAC_SECRET && env.HMAC_SECRET.length > 0
+				? env.HMAC_SECRET
+				: HARD_CODED_HMAC_SECRET;
+
 			if (!hmacSecret) {
 				throw new Error("HMAC_SECRET is not set");
 			}
@@ -22,7 +81,10 @@ export default {
 			}
 
 			// 解码签名Base64到Uint8Array
-			const signatureBytes = Uint8Array.from(atob(signatureBase64), c => c.charCodeAt(0));
+			const signatureBytes = Uint8Array.from(
+				atob(signatureBase64),
+				(c) => c.charCodeAt(0),
+			);
 
 			// 导入密钥
 			const keyData = new TextEncoder().encode(hmacSecret);
