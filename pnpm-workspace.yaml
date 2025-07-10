@@ -1,6 +1,9 @@
+packages:
+  - '.'   
 onlyBuiltDependencies:
   - '@biomejs/biome'
   - '@tailwindcss/oxide'
   - esbuild
   - sharp
   - workerd
+
