@@ -92,7 +92,7 @@ export default {
 
       const cryptoKey = await crypto.subtle.importKey(
         "raw",
-        keyData.buffer,
+        keyData,
         { name: "HMAC", hash: "SHA-256" },
         false,
         ["verify"],
