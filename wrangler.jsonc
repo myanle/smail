@@ -1,0 +1,39 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "smail-app",
+	"compatibility_date": "2025-04-04",
+	"main": "./workers/app.ts",
+	"observability": {
+		"enabled": true
+	},
+	"send_email": [
+		{
+			"name": "EMAIL"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "KV",
+			"id": "cf7d1682ab1343239a3e8bc67bbf3409"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "smail-database",
+			"database_id": "71775ff5-41d3-4a62-a85c-aec9e661a7ed",
+			"preview_database_id": "71775ff5-41d3-4a62-a85c-aec9e661a7ed",
+			"migrations_dir": "./app/db/migrations"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "ATTACHMENTS",
+			"bucket_name": "smail-attachments",
+			"preview_bucket_name": "smail-attachments-preview"
+		}
+	],
+	"assets": {
+		"directory": "./build/client"
+	}
+}
