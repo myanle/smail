@@ -44,10 +44,7 @@ interface ParsedEmail {
   }>;
 }
 
-// 写死的16进制HMAC密钥（示例）
-const HMAC_SECRET = "e3f2a7d5c6b49817a7e3f2a7d5c6b49817a7e3f2a7d5c6b49817a7e3f2a7d5c6b4";
-
-// 将16进制字符串转换成Uint8Array
+// 16进制字符串转 Uint8Array
 function hexToUint8Array(hex: string): Uint8Array {
   if (hex.length % 2 !== 0) throw new Error("Invalid hex string");
   const arr = new Uint8Array(hex.length / 2);
@@ -57,12 +54,16 @@ function hexToUint8Array(hex: string): Uint8Array {
   return arr;
 }
 
+// 这里写死你的HMAC密钥，确保是16进制纯字符串，长度偶数
+const HMAC_SECRET = "e3f2a7d5c6b49817a7e3f2a7d5c6b49817a7e3f2a7d5c6b49817a7e3f2a7d5c6b4";
+
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     return requestHandler(request, {
       cloudflare: { env, ctx },
     });
   },
+
   async email(
     message: ForwardableEmailMessage,
     env: Env,
@@ -70,26 +71,25 @@ export default {
   ): Promise<void> {
     try {
       const hmacSecret = HMAC_SECRET.trim();
-      if (!hmacSecret) {
-        throw new Error("HMAC_SECRET is not set");
+      console.log("HMAC_SECRET length:", hmacSecret.length);
+
+      const keyData = hexToUint8Array(hmacSecret);
+      console.log("keyData length:", keyData.length, "keyData:", keyData);
+
+      if (keyData.length === 0) {
+        throw new Error("HMAC key data length is zero");
       }
 
-      // 从邮件头获取签名，示例用 X-Signature
       const signatureBase64 = message.headers.get("X-Signature");
       if (!signatureBase64) {
         throw new Error("Missing HMAC signature in email headers");
       }
 
-      // 解码签名Base64到Uint8Array
       const signatureBytes = Uint8Array.from(
         atob(signatureBase64),
         (c) => c.charCodeAt(0),
       );
 
-      // 把16进制密钥转换成字节数组
-      const keyData = hexToUint8Array(hmacSecret);
-
-      // 导入密钥
       const cryptoKey = await crypto.subtle.importKey(
         "raw",
         keyData.buffer,
@@ -98,10 +98,8 @@ export default {
         ["verify"],
       );
 
-      // message.raw 是邮件原始内容（ArrayBuffer 或字符串？），先转换成ArrayBuffer
       const rawArrayBuffer = await new Response(message.raw).arrayBuffer();
 
-      // 验证签名
       const isValid = await crypto.subtle.verify(
         "HMAC",
         cryptoKey,
@@ -113,7 +111,6 @@ export default {
         throw new Error("Invalid HMAC signature");
       }
 
-      // --- 以下为你原本代码 ---
       console.log(
         `📧 Received email: ${message.from} -> ${message.to}, size: ${message.rawSize}`,
       );
@@ -125,9 +122,7 @@ export default {
       const rawEmailArray = rawArrayBuffer;
       const rawEmail = new TextDecoder().decode(rawEmailArray);
 
-      const parsedEmail = (await PostalMime.parse(
-        rawEmailArray,
-      )) as ParsedEmail;
+      const parsedEmail = (await PostalMime.parse(rawEmailArray)) as ParsedEmail;
 
       console.log(
         `📝 Parsed email from: ${parsedEmail.from?.address}, subject: ${parsedEmail.subject}`,
@@ -152,7 +147,7 @@ export default {
       console.log(`✅ Email stored successfully with ID: ${emailId}`);
     } catch (error) {
       console.error("❌ Error processing email:", error);
-      // message.setReject("Email processing failed"); // 如需要拒绝邮件，可取消注释
+      // 如果需要拒绝邮件，可以在这里调用 message.setReject()
     }
   },
 } satisfies ExportedHandler<Env>;
