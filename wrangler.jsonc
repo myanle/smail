@@ -33,7 +33,7 @@
 			"preview_bucket_name": "smail-attachments-preview"
 		}
 	],
-	"assets": {
-		"directory": "./build/client"
-	}
+	// "assets": {
+	// 	"directory": "./build/client"
+	// }
 }
