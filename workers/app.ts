@@ -1,117 +1,153 @@
 import PostalMime from "postal-mime";
 import { createRequestHandler } from "react-router";
 import {
-  cleanupExpiredEmails,
-  createDB,
-  getOrCreateMailbox,
-  storeEmail,
+	cleanupExpiredEmails,
+	createDB,
+	getOrCreateMailbox,
+	storeEmail,
 } from "../app/lib/db";
 
+declare module "react-router" {
+	export interface AppLoadContext {
+		cloudflare: {
+			env: Env;
+			ctx: ExecutionContext;
+		};
+	}
+}
+
 const requestHandler = createRequestHandler(
-  () => import("virtual:react-router/server-build"),
-  import.meta.env.MODE,
+	() => import("virtual:react-router/server-build"),
+	import.meta.env.MODE,
 );
 
 interface ParsedEmail {
-  messageId?: string;
-  from?: {
-    name?: string;
-    address?: string;
-  };
-  to?: Array<{
-    name?: string;
-    address?: string;
-  }>;
-  subject?: string;
-  text?: string;
-  html?: string;
-  attachments?: Array<{
-    filename?: string;
-    mimeType?: string;
-    size?: number;
-    contentId?: string;
-    related?: boolean;
-    content?: ArrayBuffer;
-  }>;
+	messageId?: string;
+	from?: {
+		name?: string;
+		address?: string;
+	};
+	to?: Array<{
+		name?: string;
+		address?: string;
+	}>;
+	subject?: string;
+	text?: string;
+	html?: string;
+	attachments?: Array<{
+		filename?: string;
+		mimeType?: string;
+		size?: number;
+		contentId?: string;
+		related?: boolean;
+		content?: ArrayBuffer;
+	}>;
 }
 
-// 直接写死密钥，正式建议用环境变量注入
-const HMAC_SECRET = "e3f2a7d5c6b49817a7e3f2a7d5c6b49817a7e3f2a7d5c6b49817a7e3f2a7d5c6b4";
+// 十六进制字符串转 Uint8Array
+function hexToUint8Array(hex: string): Uint8Array {
+	if (hex.length % 2 !== 0) throw new Error("Invalid hex string");
+	const arr = new Uint8Array(hex.length / 2);
+	for (let i = 0; i < arr.length; i++) {
+		arr[i] = parseInt(hex.substr(i * 2, 2), 16);
+	}
+	return arr;
+}
 
 export default {
-  async fetch(request, env, ctx) {
-    return requestHandler(request, {
-      cloudflare: { env, ctx },
-    });
-  },
-  async email(message: ForwardableEmailMessage, env: Env, ctx: ExecutionContext): Promise<void> {
-    try {
-      // 这里用硬编码密钥
-      const hmacSecret = HMAC_SECRET;
-      if (!hmacSecret) {
-        throw new Error("HMAC_SECRET is not set");
-      }
+	async fetch(request, env, ctx) {
+		return requestHandler(request, {
+			cloudflare: { env, ctx },
+		});
+	},
 
-      const signatureBase64 = message.headers.get("X-Signature");
-      if (!signatureBase64) {
-        throw new Error("Missing HMAC signature in email headers");
-      }
+	async email(
+		message: ForwardableEmailMessage,
+		env: Env,
+		ctx: ExecutionContext,
+	): Promise<void> {
+		try {
+			const hmacSecret = env.HMAC_SECRET;
+			if (!hmacSecret) {
+				throw new Error("HMAC_SECRET is not set");
+			}
 
-      const signatureBytes = Uint8Array.from(atob(signatureBase64), c => c.charCodeAt(0));
+			// 从邮件头获取签名，示例用 X-Signature
+			const signatureBase64 = message.headers.get("X-Signature");
+			if (!signatureBase64) {
+				throw new Error("Missing HMAC signature in email headers");
+			}
 
-      const keyData = new TextEncoder().encode(hmacSecret);
-      const cryptoKey = await crypto.subtle.importKey(
-        "raw",
-        keyData,
-        { name: "HMAC", hash: "SHA-256" },
-        false,
-        ["verify"],
-      );
+			// 解码签名Base64到Uint8Array
+			const signatureBytes = Uint8Array.from(atob(signatureBase64), c => c.charCodeAt(0));
 
-      const rawArrayBuffer = await new Response(message.raw).arrayBuffer();
+			// 转换十六进制密钥为 Uint8Array
+			const keyData = hexToUint8Array(hmacSecret);
 
-      const isValid = await crypto.subtle.verify(
-        "HMAC",
-        cryptoKey,
-        signatureBytes,
-        rawArrayBuffer,
-      );
+			// 导入密钥
+			const cryptoKey = await crypto.subtle.importKey(
+				"raw",
+				keyData,
+				{ name: "HMAC", hash: "SHA-256" },
+				false,
+				["verify"],
+			);
 
-      if (!isValid) {
-        throw new Error("Invalid HMAC signature");
-      }
+			// message.raw 是邮件原始内容，转换成ArrayBuffer
+			const rawArrayBuffer = await new Response(message.raw).arrayBuffer();
 
-      console.log(`📧 Received email: ${message.from} -> ${message.to}, size: ${message.rawSize}`);
+			// 验证签名
+			const isValid = await crypto.subtle.verify(
+				"HMAC",
+				cryptoKey,
+				signatureBytes,
+				rawArrayBuffer,
+			);
 
-      const db = createDB();
+			if (!isValid) {
+				throw new Error("Invalid HMAC signature");
+			}
 
-      ctx.waitUntil(cleanupExpiredEmails(db));
+			// --- 以下为你原本代码 ---
+			console.log(
+				`📧 Received email: ${message.from} -> ${message.to}, size: ${message.rawSize}`,
+			);
 
-      const rawEmailArray = rawArrayBuffer;
-      const rawEmail = new TextDecoder().decode(rawEmailArray);
+			const db = createDB();
 
-      const parsedEmail = (await PostalMime.parse(rawEmailArray)) as ParsedEmail;
+			ctx.waitUntil(cleanupExpiredEmails(db));
 
-      console.log(`📝 Parsed email from: ${parsedEmail.from?.address}, subject: ${parsedEmail.subject}`);
+			const rawEmailArray = rawArrayBuffer;
+			const rawEmail = new TextDecoder().decode(rawEmailArray);
 
-      const mailbox = await getOrCreateMailbox(db, message.to);
+			const parsedEmail = (await PostalMime.parse(
+				rawEmailArray,
+			)) as ParsedEmail;
 
-      console.log(`📦 Found/Created mailbox: ${mailbox.id} for ${mailbox.email}`);
+			console.log(
+				`📝 Parsed email from: ${parsedEmail.from?.address}, subject: ${parsedEmail.subject}`,
+			);
 
-      const emailId = await storeEmail(
-        db,
-        env.ATTACHMENTS,
-        mailbox.id,
-        parsedEmail,
-        rawEmail,
-        message.rawSize,
-        message.to,
-      );
+			const mailbox = await getOrCreateMailbox(db, message.to);
 
-      console.log(`✅ Email stored successfully with ID: ${emailId}`);
-    } catch (error) {
-      console.error("❌ Error processing email:", error);
-      // message.setReject("Email processing failed");
-    }
-  },
+			console.log(
+				`📦 Found/Created mailbox: ${mailbox.id} for ${mailbox.email}`,
+			);
+
+			const emailId = await storeEmail(
+				db,
+				env.ATTACHMENTS,
+				mailbox.id,
+				parsedEmail,
+				rawEmail,
+				message.rawSize,
+				message.to,
+			);
+
+			console.log(`✅ Email stored successfully with ID: ${emailId}`);
+		} catch (error) {
+			console.error("❌ Error processing email:", error);
+			// message.setReject("Email processing failed"); // 如需要拒绝邮件，可取消注释
+		}
+	},
 } satisfies ExportedHandler<Env>;
