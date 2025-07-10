@@ -44,7 +44,18 @@ interface ParsedEmail {
   }>;
 }
 
+// 写死的16进制HMAC密钥（示例）
 const HMAC_SECRET = "e3f2a7d5c6b49817a7e3f2a7d5c6b49817a7e3f2a7d5c6b49817a7e3f2a7d5c6b4";
+
+// 将16进制字符串转换成Uint8Array
+function hexToUint8Array(hex: string): Uint8Array {
+  if (hex.length % 2 !== 0) throw new Error("Invalid hex string");
+  const arr = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    arr[i / 2] = parseInt(hex.substr(i, 2), 16);
+  }
+  return arr;
+}
 
 export default {
   async fetch(request, env, ctx) {
@@ -58,8 +69,7 @@ export default {
     ctx: ExecutionContext,
   ): Promise<void> {
     try {
-      // 用写死的密钥，不用环境变量
-      const hmacSecret = HMAC_SECRET;
+      const hmacSecret = HMAC_SECRET.trim();
       if (!hmacSecret) {
         throw new Error("HMAC_SECRET is not set");
       }
@@ -76,11 +86,13 @@ export default {
         (c) => c.charCodeAt(0),
       );
 
+      // 把16进制密钥转换成字节数组
+      const keyData = hexToUint8Array(hmacSecret);
+
       // 导入密钥
-      const keyData = new TextEncoder().encode(hmacSecret);
       const cryptoKey = await crypto.subtle.importKey(
         "raw",
-        keyData,
+        keyData.buffer,
         { name: "HMAC", hash: "SHA-256" },
         false,
         ["verify"],
