@@ -1,7 +1,5 @@
 # 本地开发环境变量配置示例
-# 复制此文件为 .dev.vars 并填入实际值
-SESSION_SECRET=2P0mFzCzW5xQ+dPbB9GQavDqHLhrM7sUba3uUiT6CIw=
-MAILBOX_DOMAIN=https://myanke.dpdns.org/
+# 复制此文件为 .dev.vars 并填入实际
 
 # Session 密钥 - 用于用户会话加密
 # 使用以下命令生成：openssl rand -base64 32
