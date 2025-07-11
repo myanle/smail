@@ -209,7 +209,7 @@ export default function Contact({ loaderData }: ComponentProps) {
 											您也可以直接发送邮件给我们：
 										</p>
 										<a
-											href="mailto:support@smail.pw"
+											href="mailto:info@velomail.dpdns.org"
 											className="text-blue-600 font-medium hover:underline text-sm sm:text-base break-all"
 										>
 											support@smail.pw
