@@ -285,7 +285,7 @@ export default function Privacy() {
 									如果您对此隐私政策有任何问题或担忧，请通过以下方式联系我们：
 								</p>
 								<ul className="list-disc pl-6 space-y-1 text-gray-600">
-									<li>邮箱：privacy@smail.pw</li>
+									<li>邮箱：info@velomail.dpdns.org</li>
 									<li>联系表单：通过我们的联系页面</li>
 								</ul>
 								<p className="text-gray-600 mt-4">
