@@ -212,7 +212,7 @@ export default function Contact({ loaderData }: ComponentProps) {
 											href="mailto:info@velomail.dpdns.org"
 											className="text-blue-600 font-medium hover:underline text-sm sm:text-base break-all"
 										>
-											support@smail.pw
+											info@velomail.dpdns.org
 										</a>
 									</CardContent>
 								</Card>
