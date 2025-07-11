@@ -33,10 +33,8 @@
 			"preview_bucket_name": "smail-attachments-preview"
 		}
 	],
-	"vars": {
-			"HMAC_SECRET": "e3f2a7d5c6b49817a7e3f2a7d5c6b49817a7e3f2a7d5c6b49817a7e3f2a7d5c6b4"
-		}
-	// "assets": {
-	// 	"directory": "./build/client"
-	// }
+	
+	 "assets": {
+		"directory": "./build/client"
+	 }
 }
