@@ -32,14 +32,14 @@ export function Footer() {
 								<MessageSquare className="h-5 w-5" />
 							</Link>
 							<a
-								href="https://github.com/akazwz/smail"
+								href="https://yuansiwang.buzz"
 								className="text-gray-400 hover:text-blue-400 transition-colors"
 								aria-label="GitHub"
 							>
 								<Github className="h-5 w-5" />
 							</a>
 							<a
-								href="https://twitter.com/akazwz_"
+								href="https://twitter.com/"
 								className="text-gray-400 hover:text-blue-400 transition-colors"
 								aria-label="Twitter"
 								target="_blank"
