@@ -132,7 +132,7 @@ export function Footer() {
 				<div className="border-t border-gray-800 mt-8 pt-8">
 					<div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
 						<div className="text-sm text-gray-400">
-							© 2024 Smail. 保留所有权利.
+							© 2025 Smail. 保留所有权利.
 						</div>
 						<div className="flex space-x-6 text-sm text-gray-400">
 							<span className="text-gray-500">免费 · 安全 · 隐私保护</span>
