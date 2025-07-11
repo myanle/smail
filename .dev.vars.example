@@ -5,4 +5,4 @@ MAILBOX_DOMAIN=https://myanke.dpdns.org/
 
 # Session 密钥 - 用于用户会话加密
 # 使用以下命令生成：openssl rand -base64 32
-SESSION_SECRET=your_session_secret_here_use_openssl_rand_base64_32_to_generate 
+SESSION_SECRET=2P0mFzCzW5xQ+dPbB9GQavDqHLhrM7sUba3uUiT6CIw=
