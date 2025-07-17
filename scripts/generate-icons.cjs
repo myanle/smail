@@ -19,9 +19,6 @@ const ICON_SIZES = {
 	"favicon-32x32.png": 32,
 };
 
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4494916955569329"
-     crossorigin="anonymous"></script>
-
 // 下载图标文件
 function downloadIcon() {
 	return new Promise((resolve, reject) => {
