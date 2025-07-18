@@ -23,6 +23,10 @@ export function meta() {
 				"Smail提供免费、安全、无广告的临时邮箱服务。无需注册，即时获取临时邮箱地址，保护您的隐私，避免垃圾邮件。24小时有效期，支持附件，完全免费。",
 		},
 		{
+			name: "google-adsense-account",
+			content: "ca-pub-4494916955569329",
+		},
+		{
 			name: "keywords",
 			content:
 				"临时邮箱,一次性邮箱,临时邮件,disposable email,temp mail,临时email,免费邮箱,隐私保护,垃圾邮件防护",
